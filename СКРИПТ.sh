@@ -1,28 +1,43 @@
 #!/bin/bash
 
-if [ "$#" -ne 2 ]; then
-    echo "Использование: $0 <входная_директория> <выходная_директория>"
-    exit 1
+if [ $# -ne 2 ]; then
+  echo "Необходимо указать две директории"
+  exit 1
 fi
 
-input_dir="$1"
-output_dir="$2"
+src_dir="$1"
+dst_dir="$2"
 
-if [ ! -d "$input_dir" ]; then
-    echo "Входная директория не существует или не является директорией: $input_dir"
-    exit 1
+if [ ! -d "$src_dir" ]; then
+  echo "Исходная директория не существует"
+  exit 1
 fi
 
-if [ ! -d "$output_dir" ]; then
-    mkdir -p "$output_dir"
+if [ ! -d "$dst_dir" ]; then
+  mkdir -p "$dst_dir"
 fi
 
-files=$(find "$input_dir" -type f)
+function copy_files {
+  local src_dir="$1"
+  local dst_dir="$2"
+  local count=1
+  for entry in "$src_dir"/*; do
+    if [ -f "$entry" ]; then
+      filename=$(basename "$entry")
+      extension="${filename##*.}"
+      filename="${filename%.*}"
+      new_filename="${filename}"
+      while [ -f "${dst_dir}/${new_filename}.${extension}" ]; do
+        count=$((count + 1))
+        new_filename="${filename}_${count}"
+      done
+      cp "$entry" "${dst_dir}/${new_filename}.${extension}"
+    elif [ -d "$entry" ]; then
+      copy_files "$entry" "$dst_dir"
+    fi
+  done
+}
 
-for file in $files; do
-    filename=$(basename "$file")
-    cp "$file" "$output_dir/$filename"
-done
+copy_files "$src_dir" "$dst_dir"
 
-echo "Файлы скопированы из $input_dir в $output_dir"
-
+echo "Копирование файлов из '$src_dir' в '$dst_dir' завершено."
